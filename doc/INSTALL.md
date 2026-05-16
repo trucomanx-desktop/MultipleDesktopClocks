@@ -21,7 +21,7 @@ multiple-desktop-clocks
 Installing `multiple-desktop-clocks` program
 
 ```bash
-git clone https://github.com/trucomanx/MultipleDesktopClocks.git
+git clone https://github.com/trucomanx-desktop/MultipleDesktopClocks.git
 cd MultipleDesktopClocks
 pip install -r requirements.txt
 cd src

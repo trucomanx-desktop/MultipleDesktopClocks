@@ -1,6 +1,7 @@
 import os
-import multiple_desktop_clocks.about as about
 import subprocess
+import multiple_desktop_clocks.about as about
+from multiple_desktop_clocks.modules.resources import resource_path
 
 
 def update_desktop_database(desktop_path):
@@ -16,16 +17,21 @@ def update_desktop_database(desktop_path):
     except FileNotFoundError:
         print("The command 'update-desktop-database' was not found. Verify that the package 'desktop-file-utils' is installed.")
 
-def create_desktop_file(desktop_path, overwrite=False):
-    base_dir_path = os.path.dirname(os.path.abspath(__file__))
-    icon_path = os.path.join(base_dir_path, 'icons', 'logo.png')
+def create_desktop_file(desktop_path, overwrite=False, program_name=None, extras=""):
 
-    script_path = os.path.expanduser(f"~/.local/bin/{about.__program_name__}")
+    icon_path = resource_path('icons', 'logo.png')
+
+    if program_name is None:
+        __program_name = about.__program_name__
+    else:
+        __program_name = program_name
+
+    script_path = os.path.expanduser(f"~/.local/bin/{__program_name}")
 
     desktop_entry = f"""[Desktop Entry]
-Name={about.__program_name__}
+Name={__program_name}
 Comment={about.__description__}
-Exec={script_path}
+Exec={script_path} %f
 Terminal=false
 Type=Application
 Icon={icon_path}
@@ -34,15 +40,16 @@ Categories=Education;ResearchTools;
 Keywords=organizer;python;
 Encoding=UTF-8
 StartupWMClass={about.__package__}
+{extras}
 """
-    path = os.path.expanduser(os.path.join(desktop_path,f"{about.__program_name__}.desktop"))
+    path = os.path.expanduser(os.path.join(desktop_path,f"{__program_name}.desktop"))
     
     if not os.path.exists(path) or overwrite == True: 
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w") as f:
             f.write(desktop_entry)
         os.chmod(path, 0o755)
-        print(f"File {about.__program_name__}.desktop created in {path}.")
+        print(f"File {__program_name}.desktop created in {path}.")
         update_desktop_database(desktop_path)
     
 def create_desktop_directory(   directory_name = "ResearchTools",

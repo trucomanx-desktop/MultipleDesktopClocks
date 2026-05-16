@@ -8,10 +8,16 @@ from datetime import datetime
 
 import multiple_desktop_clocks.about as about
 from multiple_desktop_clocks.modules.configure import load_config, save_config
+from multiple_desktop_clocks.modules.resources import resource_path
 from multiple_desktop_clocks.modules.wabout  import show_about_window
-from multiple_desktop_clocks.desktop import create_desktop_file, create_desktop_directory, create_desktop_menu
+from multiple_desktop_clocks.desktop import create_desktop_file
+from multiple_desktop_clocks.desktop import create_desktop_directory
+from multiple_desktop_clocks.desktop import create_desktop_menu
 
-CONFIG_PATH = os.path.join(os.path.expanduser("~"),".config",about.__package__,"config.json")
+CONFIG_PATH = os.path.join( os.path.expanduser("~"),
+                            ".config",
+                            about.__package__,
+                            "config.json")
 
 
 # ======== Classe da janela do relógio ========
@@ -176,8 +182,7 @@ class ClockIndicator(QSystemTrayIcon):
             "url_bugs": about.__url_bugs__
         }
         
-        base_dir_path = os.path.dirname(os.path.abspath(__file__))
-        logo_path = os.path.join(base_dir_path, 'icons', 'logo.png')
+        logo_path = resource_path('icons', 'logo.png')
         
         show_about_window(data, logo_path)
 
@@ -214,8 +219,7 @@ def main():
     app.setQuitOnLastWindowClosed(False)
 
     # Get base directory for icons
-    base_dir_path = os.path.dirname(os.path.abspath(__file__))
-    icon_path = os.path.join(base_dir_path, 'icons', 'logo.png')
+    icon_path = resource_path('icons', 'logo.png')
     
     icon = QIcon(icon_path)
     tray = ClockIndicator(icon)
