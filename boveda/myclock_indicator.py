@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import sys
 from PyQt5.QtCore import Qt, QTimer, QPoint, QRectF
 from PyQt5.QtWidgets import QApplication, QLabel, QWidget, QSystemTrayIcon, QMenu
