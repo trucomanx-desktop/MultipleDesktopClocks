@@ -18,6 +18,40 @@ CONFIG_PATH = os.path.join( os.path.expanduser("~"),
                             ".config",
                             about.__package__,
                             "config.json")
+GUI_CONFIG_PATH = os.path.join(os.path.dirname(CONFIG_PATH), "config_gui.json")
+DEFAULT_GUI_TEXT = {
+    "add_timezone": "➕ Add time zone",
+    "remove_timezone": "➖ Remove time zone",
+    "choose_timezone": "Choose a timezone:",
+    "font_size": "Set font size...",
+    "font_family": "Set font family...",
+    "font_color": "Set font color...",
+    "font_size_title": "Font size",
+    "font_size_prompt": "Enter font size:",
+    "font_family_title": "Font family",
+    "font_family_prompt": "Enter font family:",
+    "font_color_title": "Font color",
+    "about": "ℹ️ About",
+    "exit": "❌ Exit",
+}
+
+
+def load_gui_text():
+    """Load editable GUI labels, creating English defaults on first run."""
+    os.makedirs(os.path.dirname(GUI_CONFIG_PATH), exist_ok=True)
+    try:
+        with open(GUI_CONFIG_PATH, "r", encoding="utf-8") as gui_file:
+            saved_text = json.load(gui_file)
+        if not isinstance(saved_text, dict):
+            saved_text = {}
+    except (OSError, json.JSONDecodeError):
+        saved_text = {}
+
+    gui_text = {**DEFAULT_GUI_TEXT, **saved_text}
+    if gui_text != saved_text:
+        with open(GUI_CONFIG_PATH, "w", encoding="utf-8") as gui_file:
+            json.dump(gui_text, gui_file, indent=4, ensure_ascii=False)
+    return gui_text
 
 
 # ======== Classe da janela do relógio ========
@@ -113,6 +147,8 @@ class ClockIndicator(QSystemTrayIcon):
         if isinstance(saved_settings, dict):
             self.font_settings.update(saved_settings)
 
+        self.gui_text = load_gui_text()
+
         for tz, pos in self.config.items():
             x = pos.get("x", 200)
             y = pos.get("y", 200)
@@ -122,32 +158,32 @@ class ClockIndicator(QSystemTrayIcon):
         menu = QMenu(parent)
         
         # Add
-        add_action = menu.addAction("➕ Add time zone")
+        add_action = menu.addAction(self.gui_text["add_timezone"])
         add_action.triggered.connect(self.add_timezone)
         
         # Remove
-        remove_action = menu.addAction("➖ Remove time zone")
+        remove_action = menu.addAction(self.gui_text["remove_timezone"])
         remove_action.triggered.connect(self.remove_timezone)
         
         #
         menu.addSeparator()
         
         # Font controls
-        font_size_action = menu.addAction("Set font size...")
+        font_size_action = menu.addAction(self.gui_text["font_size"])
         font_size_action.triggered.connect(self.set_font_size)
-        font_family_action = menu.addAction("Set font family...")
+        font_family_action = menu.addAction(self.gui_text["font_family"])
         font_family_action.triggered.connect(self.set_font_family)
-        font_color_action = menu.addAction("Set font color...")
+        font_color_action = menu.addAction(self.gui_text["font_color"])
         font_color_action.triggered.connect(self.set_font_color)
 
         menu.addSeparator()
 
         # About
-        about_action = menu.addAction("ℹ️ About")
+        about_action = menu.addAction(self.gui_text["about"])
         about_action.triggered.connect(self.show_about)
         
         # Exit
-        exit_action = menu.addAction("❌ Exit")
+        exit_action = menu.addAction(self.gui_text["exit"])
         exit_action.triggered.connect(self.exit_app)
         
         self.setContextMenu(menu)
@@ -173,8 +209,8 @@ class ClockIndicator(QSystemTrayIcon):
 
     def add_timezone(self):
         tz_list = pytz.all_timezones
-        tz, ok = QInputDialog.getItem(None, "Add time zone",
-                                      "Choose a timezone:", tz_list, 0, False)
+        tz, ok = QInputDialog.getItem(None, self.gui_text["add_timezone"],
+                                      self.gui_text["choose_timezone"], tz_list, 0, False)
         if ok and tz:
             self.add_clock(tz)
 
@@ -200,14 +236,16 @@ class ClockIndicator(QSystemTrayIcon):
         self.save_all_positions()
 
     def set_font_size(self):
-        size, ok = QInputDialog.getInt(None, "Font size", "Enter font size:",
+        size, ok = QInputDialog.getInt(None, self.gui_text["font_size_title"],
+                                       self.gui_text["font_size_prompt"],
                                        self.font_settings["font_size"], 6, 96, 1)
         if ok:
             self.font_settings["font_size"] = size
             self.apply_font_settings()
 
     def set_font_family(self):
-        family, ok = QInputDialog.getText(None, "Font family", "Enter font family:",
+        family, ok = QInputDialog.getText(None, self.gui_text["font_family_title"],
+                                          self.gui_text["font_family_prompt"],
                                           text=self.font_settings["font_family"])
         if ok and family.strip():
             self.font_settings["font_family"] = family.strip()
@@ -215,7 +253,7 @@ class ClockIndicator(QSystemTrayIcon):
 
     def set_font_color(self):
         color = QColorDialog.getColor(QColor(self.font_settings["font_color"]),
-                                      None, "Font color")
+                                      None, self.gui_text["font_color_title"])
         if color.isValid():
             self.font_settings["font_color"] = color.name()
             self.apply_font_settings()

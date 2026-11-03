@@ -1,6 +1,6 @@
 # about.py
 
-__version__ = "0.1.4"
+__version__ = "0.1.5"
 __package__ = "multiple_desktop_clocks"
 __program_name__ = "multiple-desktop-clocks"
 __author__ = "Fernando Pujaico Rivera" 

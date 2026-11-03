@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "multiple_desktop_clocks"
-version = "0.1.4"
+version = "0.1.5"
 description = "Display multiple time zones as desktop clocks."
 readme = "README.md"
 authors = [{name = "Fernando Pujaico Rivera", email = "fernando.pujaico.rivera@gmail.com"}]
