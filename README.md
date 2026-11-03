@@ -8,12 +8,21 @@ Display multiple time zones as desktop clocks.
 
 To install the package from [PyPI](https://pypi.org/project/multiple-desktop-clocks/), follow the instructions below:
 
+### With pip
 
 ```bash
 pip install --upgrade multiple-desktop-clocks
 ```
 
 Execute `which multiple-desktop-clocks` to see where it was installed, probably in `/home/USERNAME/.local/bin/multiple-desktop-clocks`.
+
+### With pipx (recommended for desktop applications)
+
+```bash
+pipx install multiple_desktop_clocks
+```
+
+If you need to upgrade later: `pipx upgrade multiple_desktop_clocks`
 
 ### Using
 
