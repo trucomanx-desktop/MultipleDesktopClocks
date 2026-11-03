@@ -1,8 +1,8 @@
 import sys, os, json, signal
 from PyQt5.QtCore import Qt, QTimer, QPoint, QRectF
 from PyQt5.QtWidgets import (QApplication, QLabel, QWidget, QSystemTrayIcon,
-                             QMenu, QInputDialog)
-from PyQt5.QtGui import QFont, QPainterPath, QRegion, QIcon, QFontMetrics
+                             QMenu, QInputDialog, QColorDialog)
+from PyQt5.QtGui import QFont, QPainterPath, QRegion, QIcon, QFontMetrics, QColor
 import pytz
 from datetime import datetime
 
@@ -23,7 +23,7 @@ CONFIG_PATH = os.path.join( os.path.expanduser("~"),
 # ======== Classe da janela do relógio ========
 
 class StickyClock(QWidget):
-    def __init__(self, timezone):
+    def __init__(self, timezone, font_settings):
         super().__init__()
         self.timezone = timezone
         
@@ -35,8 +35,9 @@ class StickyClock(QWidget):
         self.setAttribute(Qt.WA_TranslucentBackground)
 
         self.HEIGHT = 80
-        self.FONTSIZE = 24
-        self.COLOR = "white"
+        self.font_settings = font_settings
+        self.FONTSIZE = font_settings["font_size"]
+        self.COLOR = font_settings["font_color"]
 
         self.RADIUS = 20
         self.resize(250, self.HEIGHT)
@@ -44,7 +45,7 @@ class StickyClock(QWidget):
 
         self.label = QLabel(self)
         self.label.setStyleSheet(f"color: {self.COLOR};")
-        font = QFont('DejaVu Sans Mono', self.FONTSIZE, QFont.Bold)
+        font = QFont(font_settings["font_family"], self.FONTSIZE, QFont.Bold)
         self.label.setFont(font)
         self.label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
         self.label.setGeometry(0, 0, 250, self.HEIGHT)
@@ -100,8 +101,18 @@ class ClockIndicator(QSystemTrayIcon):
 
         self.clocks = {}  # timezone -> StickyClock
 
-        # Carregar fusos do JSON
+        # load_config returns the dictionary stored under "clocks".
+        # Keep shared font settings in that dictionary under a reserved key.
         self.config = load_config(CONFIG_PATH)
+        self.font_settings = {
+            "font_family": "DejaVu Sans Mono",
+            "font_size": 24,
+            "font_color": "#FFFFFF",
+        }
+        saved_settings = self.config.pop("__settings__", {})
+        if isinstance(saved_settings, dict):
+            self.font_settings.update(saved_settings)
+
         for tz, pos in self.config.items():
             x = pos.get("x", 200)
             y = pos.get("y", 200)
@@ -121,6 +132,16 @@ class ClockIndicator(QSystemTrayIcon):
         #
         menu.addSeparator()
         
+        # Font controls
+        font_size_action = menu.addAction("Set font size...")
+        font_size_action.triggered.connect(self.set_font_size)
+        font_family_action = menu.addAction("Set font family...")
+        font_family_action.triggered.connect(self.set_font_family)
+        font_color_action = menu.addAction("Set font color...")
+        font_color_action.triggered.connect(self.set_font_color)
+
+        menu.addSeparator()
+
         # About
         about_action = menu.addAction("ℹ️ About")
         about_action.triggered.connect(self.show_about)
@@ -136,7 +157,7 @@ class ClockIndicator(QSystemTrayIcon):
     def add_clock(self, timezone, x=200, y=200):
         if timezone in self.clocks:
             return
-        clock = StickyClock(timezone)
+        clock = StickyClock(timezone, self.font_settings)
         clock.move(x, y)
         clock.tray_ref = self   # <<< adiciona referência ao tray
         clock.show()
@@ -144,7 +165,7 @@ class ClockIndicator(QSystemTrayIcon):
         self.save_all_positions()
 
     def save_all_positions(self):
-        data = {}
+        data = {"__settings__": self.font_settings.copy()}
         for tz, clock in self.clocks.items():
             data[tz] = {"x": clock.x(), "y": clock.y()}
         save_config(CONFIG_PATH, data)
@@ -166,7 +187,38 @@ class ClockIndicator(QSystemTrayIcon):
         if ok and tz:
             self.clocks[tz].close()
             del self.clocks[tz]
-            save_config(CONFIG_PATH,list(self.clocks.keys()))
+            self.save_all_positions()
+
+    def apply_font_settings(self):
+        for clock in self.clocks.values():
+            clock.COLOR = self.font_settings["font_color"]
+            clock.FONTSIZE = self.font_settings["font_size"]
+            clock.label.setStyleSheet(f"color: {clock.COLOR};")
+            clock.label.setFont(QFont(self.font_settings["font_family"],
+                                      clock.FONTSIZE, QFont.Bold))
+            clock.update_time()
+        self.save_all_positions()
+
+    def set_font_size(self):
+        size, ok = QInputDialog.getInt(None, "Font size", "Enter font size:",
+                                       self.font_settings["font_size"], 6, 96, 1)
+        if ok:
+            self.font_settings["font_size"] = size
+            self.apply_font_settings()
+
+    def set_font_family(self):
+        family, ok = QInputDialog.getText(None, "Font family", "Enter font family:",
+                                          text=self.font_settings["font_family"])
+        if ok and family.strip():
+            self.font_settings["font_family"] = family.strip()
+            self.apply_font_settings()
+
+    def set_font_color(self):
+        color = QColorDialog.getColor(QColor(self.font_settings["font_color"]),
+                                      None, "Font color")
+        if color.isValid():
+            self.font_settings["font_color"] = color.name()
+            self.apply_font_settings()
 
     def show_about(self):
         data = {
